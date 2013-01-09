@@ -4,10 +4,12 @@ extern "C" {
 }
 #include "go2response.h"
 #include "gocatorsystem.h"
+
 #include <fstream>
 #include <ios>
 #include <string>
 #include <iostream>
+#include <stdexcept>
 
 #define RECEIVE_TIMEOUT 100000
 #define INVALID_RANGE_16BIT 0x8000

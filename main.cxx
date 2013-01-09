@@ -9,10 +9,22 @@ extern "C" {
 #include "gocatorcontrol.h"
 
 #include <boost/program_options.hpp>
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <string>
 
 namespace opts = boost::program_options;
+
+// Case insensitive char comparison, courtesy C++ Cookbook
+inline bool compareChars(char a, char b) {
+    return(toupper(a) == toupper(b));
+}
+
+bool compareStrings(const std::string& s1, const std::string& s2) {
+    return ((s1.size()==s2.size()) &&
+            std::equal(s1.begin(), s1.end(), s2.begin(), compareChars));
+}
 
 // Returns a configured linear encoder from the specified configuration file
 Encoder configureEncoder(std::string& configFile) {
@@ -40,9 +52,9 @@ Encoder configureEncoder(std::string& configFile) {
             }
             enum TriggerDirection trig_dir;
             std::string travel_direction = config["Encoder.travel_direction"].as<std::string>();
-            if (travel_direction=="forward") {
+            if (compareStrings(travel_direction, "forward")) {
                 trig_dir = FORWARD;
-            } else if (travel_direction=="backward") {
+            } else if (compareStrings(travel_direction, "backward")) {
                 trig_dir = BACKWARD;
             } else {
                 trig_dir = BIDIRECTIONAL;
@@ -50,7 +62,7 @@ Encoder configureEncoder(std::string& configFile) {
             configuredEncoder.trigger_direction = trig_dir;
         }
     } catch (const boost::program_options::invalid_option_value& ex) {
-        std::cout << "Encountered a bad config option in '" << configFile << ".'" << std::endl;
+        std::cerr << "Encountered a bad config option in '" << configFile << ".'" << std::endl;
         throw(ex);
     }
     return configuredEncoder;
@@ -59,7 +71,8 @@ Encoder configureEncoder(std::string& configFile) {
 // Usage: gocator_encoder [--output outputfile] [--config configfile]
 // If not specified, writes X,Y,Z data to file 'profile.csv' in current folder.
 int main(int argc, char* argv[]) {
-
+    std::cout << "Gocator 20x0 Profiler" << std::endl;
+    std::cout << "Chris R. Coughlin (TRI/Austin, Inc.)" << std::endl;
     opts::options_description opt_desc("Available options");
     opt_desc.add_options()
         ("output,o", opts::value<std::string>()->default_value("profile.csv"), "output file for profile data")
@@ -85,7 +98,7 @@ int main(int argc, char* argv[]) {
         outputFilename = cmdline["output"].as<std::string>();
     }
     if (verbose) {
-        std::cout << "\nSaving profile data to '" << outputFilename << "'" << std::endl;
+        std::cout << "Saving profile data to '" << outputFilename << "'" << std::endl;
     }
 
     std::string configFilename;
@@ -93,7 +106,7 @@ int main(int argc, char* argv[]) {
         configFilename = cmdline["config"].as<std::string>();
     }
     if (verbose) {
-        std::cout << "\nAdditional config read from '" << configFilename << "'" << std::endl;  
+        std::cout << "Additional config read from '" << configFilename << "'\n\n" << std::endl;  
     }
 
     // Startup and login
@@ -116,7 +129,7 @@ int main(int argc, char* argv[]) {
                 trig_dir = "backward";
                 break;
             default:
-                trig_dir = "unidirectional";
+                trig_dir = "bidirectional";
         }
         std::cout << "\tTrigger on " << trig_dir << " movement of more than " << lme.travel_threshold << " mm>>\n" << std::endl;
     }

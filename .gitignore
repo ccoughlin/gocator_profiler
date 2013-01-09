@@ -1,3 +1,4 @@
 gocator_encoder
 *.cfg
 *.csv
+*.o

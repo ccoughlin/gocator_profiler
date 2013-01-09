@@ -1,9 +1,6 @@
 #include "gocatorcontrol.h"
 
 // Configures Gocator 20x0 to use an attached encoder.
-// Currently set to trigger in both directions.
-// encoderResolution - encoder's resolution (mm/tick)
-// triggerThreshold - # ticks to trigger encoder
 void GocatorControl::configureEncoder(Encoder& encoder) {
     std::string SetTriggerResponse = getResponseString("Go2System_SetTriggerSource", 
                                            Go2System_SetTriggerSource(sys.getSystem(), GO2_TRIGGER_SOURCE_ENCODER));
@@ -67,7 +64,8 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
         }
         if (returnCode != GO2_OK) {
             // todo-implement halt
-            std::cerr << "Initialization failed, program halted." << std::endl;
+            std::cerr << "\n<< Initialization failed, aborting >>" << std::endl;
+            throw std::runtime_error("Gocator 20x0 initialization failed");
         }
         while(true) {
             Go2Status returnCode = Go2System_ReceiveData(sys.getSystem(), RECEIVE_TIMEOUT, &data);
@@ -86,14 +84,18 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
                         if (profileData[arrayIndex] != INVALID_RANGE_16BIT) {
                             fidout << XOffset+XResolution*arrayIndex << "," << encoderCounter*resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl;
                         } else {
-                            std::cout << "Invalid reading, skipped." << std::endl;
+                            if (verbose) {
+                                std::cout << "Invalid reading, skipped." << std::endl;
+                            }
                         }
+                        fidout.flush();
                     }
                 }
             }
         }
         fidout.close();
     } else {
-        std::cerr << "Unable to open/write to output file '" << outputFilename << ".'" << std::endl;
+        std::cerr << "<< Unable to open/write to output file '" << outputFilename << "', aborting >>" << std::endl;
+        throw std::runtime_error("Unable to write to output");
     }
 }
