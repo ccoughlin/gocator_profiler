@@ -63,7 +63,6 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
             std::cout << getResponseString("Go2System_ConnectData", returnCode) << std::endl;
         }
         if (returnCode != GO2_OK) {
-            // todo-implement halt
             std::cerr << "\n<< Initialization failed, aborting >>" << std::endl;
             throw std::runtime_error("Gocator 20x0 initialization failed");
         }
@@ -79,7 +78,11 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
                     double ZResolution = Go2ProfileData_ZResolution(dataItem);
                     double XOffset = Go2ProfileData_XOffset(dataItem);
                     double ZOffset = Go2ProfileData_ZOffset(dataItem);
-                    std::cout << getResponseString("Go2System_GetEncoder", Go2System_GetEncoder(sys.getSystem(), &encoderCounter)) << std::endl; // number of ticks of encoder
+                    // number of ticks of encoder
+                    std::string GetEncoderResponse = getResponseString("Go2System_GetEncoder", Go2System_GetEncoder(sys.getSystem(), &encoderCounter));
+                    if (verbose) {
+                        std::cout << GetEncoderResponse << std::endl; 
+                    }
                     for(unsigned int arrayIndex=0;arrayIndex<profilePointCount; ++arrayIndex) {
                         if (profileData[arrayIndex] != INVALID_RANGE_16BIT) {
                             fidout << XOffset+XResolution*arrayIndex << "," << encoderCounter*resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl;
