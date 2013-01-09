@@ -1,4 +1,4 @@
 gocator_encoder
-*.cfg
+Go2System_*
 *.csv
 *.o
