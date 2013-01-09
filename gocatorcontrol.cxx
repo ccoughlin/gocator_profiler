@@ -2,6 +2,7 @@
 
 // Configures Gocator 20x0 to use an attached encoder.
 void GocatorControl::configureEncoder(Encoder& encoder) {
+    lme = encoder;
     std::string SetTriggerResponse = getResponseString("Go2System_SetTriggerSource", 
                                            Go2System_SetTriggerSource(sys.getSystem(), GO2_TRIGGER_SOURCE_ENCODER));
     if (verbose) {
@@ -9,7 +10,7 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
     }
  
     std::string SetResolutionResponse = getResponseString("Go2System_SetTravelResolution", 
-                                              Go2System_SetTravelResolution(sys.getSystem(), encoder.resolution));
+                                              Go2System_SetTravelResolution(sys.getSystem(), lme.resolution));
     if (verbose) {
         std::cout << SetResolutionResponse << std::endl;
     }
@@ -21,7 +22,7 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
     }
 
     std::string SetEncoderPeriodResponse = getResponseString("Go2System_SetEncoderPeriod", 
-                                                 Go2System_SetEncoderPeriod(sys.getSystem(), encoder.travel_threshold));
+                                                 Go2System_SetEncoderPeriod(sys.getSystem(), lme.travel_threshold));
     if (verbose) {
         std::cout << SetEncoderPeriodResponse << std::endl;
     }
@@ -85,7 +86,7 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
                     }
                     for(unsigned int arrayIndex=0;arrayIndex<profilePointCount; ++arrayIndex) {
                         if (profileData[arrayIndex] != INVALID_RANGE_16BIT) {
-                            fidout << XOffset+XResolution*arrayIndex << "," << encoderCounter*resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl;
+                            fidout << XOffset+XResolution*arrayIndex << "," << encoderCounter*lme.resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl;
                         } else {
                             if (verbose) {
                                 std::cout << "Invalid reading, skipped." << std::endl;

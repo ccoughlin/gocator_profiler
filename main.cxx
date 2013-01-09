@@ -134,7 +134,8 @@ int main(int argc, char* argv[]) {
         std::cout << "\tTrigger on " << trig_dir << " movement of more than " << lme.travel_threshold << " mm>>\n" << std::endl;
     }
     
-    // Output profile    
+    // Output profile  
+    std::cout << "Connected to Gocator..." << std::endl;  
     control.recordProfile(outputFilename);
     return 0;
 }

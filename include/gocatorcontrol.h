@@ -32,6 +32,5 @@ class GocatorControl {
     private:
         GocatorSystem& sys;
         bool verbose;
-        double resolution;  // Encoder resolution in mm (or mm/ticks if you prefer)
-        double travel_threshold; // Trigger threshold - # of ticks to cause a trigger
+        Encoder lme;
 };
