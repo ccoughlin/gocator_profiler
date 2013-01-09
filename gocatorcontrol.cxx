@@ -4,9 +4,7 @@
 // Currently set to trigger in both directions.
 // encoderResolution - encoder's resolution (mm/tick)
 // triggerThreshold - # ticks to trigger encoder
-void GocatorControl::configureEncoder(double encoderResolution, double triggerThreshold) {
-    resolution = encoderResolution;
-    travel_threshold = triggerThreshold;
+void GocatorControl::configureEncoder(Encoder& encoder) {
     std::string SetTriggerResponse = getResponseString("Go2System_SetTriggerSource", 
                                            Go2System_SetTriggerSource(sys.getSystem(), GO2_TRIGGER_SOURCE_ENCODER));
     if (verbose) {
@@ -14,7 +12,7 @@ void GocatorControl::configureEncoder(double encoderResolution, double triggerTh
     }
  
     std::string SetResolutionResponse = getResponseString("Go2System_SetTravelResolution", 
-                                              Go2System_SetTravelResolution(sys.getSystem(), resolution));
+                                              Go2System_SetTravelResolution(sys.getSystem(), encoder.resolution));
     if (verbose) {
         std::cout << SetResolutionResponse << std::endl;
     }
@@ -26,13 +24,24 @@ void GocatorControl::configureEncoder(double encoderResolution, double triggerTh
     }
 
     std::string SetEncoderPeriodResponse = getResponseString("Go2System_SetEncoderPeriod", 
-                                                 Go2System_SetEncoderPeriod(sys.getSystem(), travel_threshold));
+                                                 Go2System_SetEncoderPeriod(sys.getSystem(), encoder.travel_threshold));
     if (verbose) {
         std::cout << SetEncoderPeriodResponse << std::endl;
     }
 
+    Go2EncoderTriggerMode trigger_mode;
+    switch(encoder.trigger_direction) {
+        case FORWARD:
+            trigger_mode = GO2_ENCODER_TRIGGER_MODE_IGNORE_REVERSE;
+            break;
+        case BACKWARD:
+            trigger_mode = GO2_ENCODER_TRIGGER_MODE_TRACK_REVERSE;
+            break;
+        default:
+            trigger_mode = GO2_ENCODER_TRIGGER_MODE_BIDIRECTIONAL;
+    }
     std::string SetTriggerModeResponse = getResponseString("Go2System_SetEncoderTriggerMode", 
-                                               Go2System_SetEncoderTriggerMode(sys.getSystem(), GO2_ENCODER_TRIGGER_MODE_BIDIRECTIONAL));
+                                               Go2System_SetEncoderTriggerMode(sys.getSystem(), trigger_mode));
     if (verbose) {
         std::cout << SetTriggerModeResponse << std::endl;
     }
