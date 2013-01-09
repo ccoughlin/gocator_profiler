@@ -100,14 +100,17 @@ class UI(wx.Frame):
         """Creates the main menu"""
         self.menubar = wx.MenuBar()
         self.file_mnu = wx.Menu()
-        self.plotdata_mnui = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Plot Data...",
+        self.plotdata_mnui = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Plot Data...\tCTRL+O",
                                          help="Reads and plots an XYZ CSV data file")
         self.Bind(wx.EVT_MENU, self.on_plot_data, id=self.plotdata_mnui.GetId())
         self.file_mnu.AppendItem(self.plotdata_mnui)
-        self.setzlim_mnui = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Set Z Axis Limits...",
+        self.setzlim_mnui = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Set Z Axis Limits...\tCTRL+Z",
                                         help="Sets the limits of the Z Axis")
         self.Bind(wx.EVT_MENU, self.on_setzlim, id=self.setzlim_mnui.GetId())
         self.file_mnu.AppendItem(self.setzlim_mnui)
+        self.quit_mnui = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Exit Plotter\tCTRL+Q")
+        self.Bind(wx.EVT_MENU, self.on_quit, id=self.quit_mnui.GetId())
+        self.file_mnu.AppendItem(self.quit_mnui)
         self.menubar.Append(self.file_mnu, "Operation")
         self.SetMenuBar(self.menubar)
 
@@ -173,6 +176,10 @@ class UI(wx.Frame):
     def refresh_plot(self):
         """Forces plot to redraw itself"""
         self.canvas.draw()
+
+    def on_quit(self, evt):
+        """Handles request to exit the program"""
+        self.Destroy()
 
 def main():
     app = wx.PySimpleApp()
