@@ -9,12 +9,14 @@ extern "C" {
 #include "gocatorcontrol.h"
 
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <string>
 
 namespace opts = boost::program_options;
+namespace filesystem = boost::filesystem;
 
 // Case insensitive char comparison, courtesy C++ Cookbook
 inline bool compareChars(char a, char b) {
@@ -28,6 +30,10 @@ bool compareStrings(const std::string& s1, const std::string& s2) {
 
 // Returns a configured linear encoder from the specified configuration file
 Encoder configureEncoder(std::string& configFile) {
+    if (!filesystem::exists(configFile.c_str())) {
+        std::cerr << "<< Unable to find configuration file '" << configFile << ",' aborting >>" << std::endl;
+        throw std::runtime_error("Configuration file not found");
+    }
     Encoder configuredEncoder;
     std::ifstream fidin;
     fidin.open(configFile.c_str());
@@ -135,7 +141,7 @@ int main(int argc, char* argv[]) {
     }
     
     // Output profile  
-    std::cout << "Connected to Gocator..." << std::endl;  
+    std::cout << "Connected to Gocator, monitoring encoder..." << std::endl;  
     control.recordProfile(outputFilename);
     return 0;
 }

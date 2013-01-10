@@ -10,6 +10,7 @@ extern "C" {
 #include <string>
 #include <iostream>
 #include <stdexcept>
+#include <boost/filesystem.hpp>
 
 #define RECEIVE_TIMEOUT 100000
 #define INVALID_RANGE_16BIT 0x8000

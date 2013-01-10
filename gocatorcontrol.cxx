@@ -1,4 +1,5 @@
 #include "gocatorcontrol.h"
+namespace filesystem = boost::filesystem;
 
 // Configures Gocator 20x0 to use an attached encoder.
 void GocatorControl::configureEncoder(Encoder& encoder) {
@@ -47,6 +48,11 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
     
 // Records range profiles to disk as comma-delimited ASCII.
 void GocatorControl::recordProfile(std::string& outputFilename) {
+    try {
+        filesystem::remove(outputFilename.c_str());
+    } catch (filesystem::filesystem_error &err) {
+        std::cerr << "<< Unable to overwrite '" << outputFilename << ",' appending >>" << std::endl;
+    }
     std::ofstream fidout;
     fidout.open(outputFilename.c_str(), std::ios_base::app);
     if (fidout.is_open()) {
@@ -86,18 +92,21 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
                     }
                     for(unsigned int arrayIndex=0;arrayIndex<profilePointCount; ++arrayIndex) {
                         if (profileData[arrayIndex] != INVALID_RANGE_16BIT) {
-                            fidout << XOffset+XResolution*arrayIndex << "," << encoderCounter*lme.resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl;
+                            fidout << XOffset+XResolution*arrayIndex << "," << encoderCounter*lme.resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl << std::flush;
                         } else {
                             if (verbose) {
                                 std::cout << "Invalid reading, skipped." << std::endl;
                             }
                         }
-                        fidout.flush();
                     }
                 }
             }
         }
+        fidout.flush();
         fidout.close();
+        if (fidout.fail()) {
+            std::cerr << "<< Encountered error writing to '" << outputFilename << ",' data may have been lost.\n" << std::endl;
+        }
     } else {
         std::cerr << "<< Unable to open/write to output file '" << outputFilename << "', aborting >>" << std::endl;
         throw std::runtime_error("Unable to write to output");

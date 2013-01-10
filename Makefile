@@ -1,7 +1,7 @@
 CC=g++
 GOCATOR_SDK=/home/ccoughlin/src/c/14400-3.4.1.155_SOFTWARE_Go2_SDK
 CFLAGS=-c -Wall -I$(GOCATOR_SDK)/include -Iinclude
-LDFLAGS=-L/usr/lib/i386-linux-gnu/ -lpthread -lrt -lboost_program_options
+LDFLAGS=-L/usr/lib/i386-linux-gnu/ -lpthread -lrt -lboost_program_options -lboost_filesystem -lboost_system
 DEPS=Go2.h
 SOURCES=main.cxx go2response.cxx gocatorsystem.cxx gocatorcontrol.cxx
 OBJECTS=$(SOURCES:.cxx=.o)
