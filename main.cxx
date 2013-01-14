@@ -10,6 +10,7 @@ extern "C" {
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/thread/thread.hpp>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -72,6 +73,15 @@ Encoder configureEncoder(std::string& configFile) {
         throw(ex);
     }
     return configuredEncoder;
+}
+
+void recordProfile(GocatorControl& control, std::string& outputFilename) {
+    boost::thread thd(boost::bind(&GocatorControl::recordProfile, control, outputFilename));
+    char character2;
+    std::cout << "Press any key + Enter to stop recording." << std::endl;
+    std::cin >> character2;
+    thd.interrupt();    
+    thd.join();
 }
 
 // Usage: gocator_encoder [--output outputfile] [--config configfile]
@@ -142,6 +152,7 @@ int main(int argc, char* argv[]) {
     
     // Output profile  
     std::cout << "Connected to Gocator, monitoring encoder..." << std::endl;  
-    control.recordProfile(outputFilename);
+    //control.recordProfile(outputFilename);
+    recordProfile(control, outputFilename);
     return 0;
 }

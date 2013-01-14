@@ -74,6 +74,7 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
             throw std::runtime_error("Gocator 20x0 initialization failed");
         }
         while(true) {
+            boost::this_thread::interruption_point();
             Go2Status returnCode = Go2System_ReceiveData(sys.getSystem(), RECEIVE_TIMEOUT, &data);
             if (returnCode == GO2_OK) {
                 itemCount = Go2Data_ItemCount(data);
@@ -85,6 +86,8 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
                     double ZResolution = Go2ProfileData_ZResolution(dataItem);
                     double XOffset = Go2ProfileData_XOffset(dataItem);
                     double ZOffset = Go2ProfileData_ZOffset(dataItem);
+                    // Disable thread interruption while we're writing data
+                    boost::this_thread::disable_interruption di;
                     // number of ticks of encoder
                     std::string GetEncoderResponse = getResponseString("Go2System_GetEncoder", Go2System_GetEncoder(sys.getSystem(), &encoderCounter));
                     if (verbose) {
@@ -99,8 +102,10 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
                             }
                         }
                     }
+                    boost::this_thread::restore_interruption ri(di);
                 }
             }
+            boost::this_thread::yield();
         }
         fidout.flush();
         fidout.close();
