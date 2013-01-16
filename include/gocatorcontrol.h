@@ -32,26 +32,26 @@ class GocatorControl {
         void configureTrigger();
         void recordProfile(std::string& outputFilename);
         Go2System& getSystem() {return sys.getSystem();}
+        Encoder& getEncoder() {return lme;}
+        void resetEncoder() {Go2System_GetEncoder(sys.getSystem(), &startingEncoderReading);}
     private:
         GocatorSystem& sys;
         bool verbose;
         Encoder lme;
+        Go2Int64 startingEncoderReading;
 };
 
 // Define the various types of trigger
 
 class Trigger {
 public:
-    Go2Status set(GocatorControl& controller) {
-        Go2System_EnableTriggerGate(controller.getSystem(), useTriggerGate);
-        return Go2System_SetTriggerSource(controller.getSystem(), triggerSource);
-    }
+    virtual Go2Status set(GocatorControl& controller)=0;
     void setTriggerGate(bool enabled) {
         useTriggerGate = enabled;
     }
     bool isTriggerGateEnabled() {return useTriggerGate;}
     virtual std::string getTriggerType()=0;
-private:
+protected:
     static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_SOFTWARE;
     Go2Bool useTriggerGate;
 };
@@ -59,19 +59,27 @@ private:
 // Software trigger
 class SoftwareTrigger:public Trigger {
 public:
+    Go2Status set(GocatorControl& controller) {
+        Go2System_EnableTriggerGate(controller.getSystem(), useTriggerGate);
+        return Go2System_SetTriggerSource(controller.getSystem(), triggerSource);
+    }
     std::string getTriggerType() {
         return std::string ("Software");
     }
-private:
+protected:
     static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_SOFTWARE;
 };
 
 // Digital input trigger
 class InputTrigger:public Trigger {
+    Go2Status set(GocatorControl& controller) {
+        Go2System_EnableTriggerGate(controller.getSystem(), useTriggerGate);
+        return Go2System_SetTriggerSource(controller.getSystem(), triggerSource);
+    }
     std::string getTriggerType() {
         return std::string("Digital Input");;
     }
-private:
+protected:
     static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_INPUT;
 };
 
@@ -79,17 +87,25 @@ private:
 class TimeTrigger:public Trigger {
 public:
     Go2Status set(GocatorControl& controller) {
-        Go2System_SetFrameRate(controller.getSystem(), frameRate);
-        return Trigger::set(controller);
+        Go2System sys = controller.getSystem();
+        double minFrameRate = Go2System_FrameRateMin(sys);
+        double maxFrameRate = Go2System_FrameRateMax(sys);
+        if (frameRate<minFrameRate) {
+            frameRate = minFrameRate;
+        } else if (frameRate>maxFrameRate) {
+            frameRate = maxFrameRate;
+        }
+        Go2System_SetFrameRate(sys, frameRate);
+        Go2System_EnableTriggerGate(controller.getSystem(), useTriggerGate);
+        return Go2System_SetTriggerSource(controller.getSystem(), triggerSource);    
     }
-    // todo - set guards for valid frame rate
     void setFrameRate(double framesPerSecond) {frameRate=framesPerSecond;}
     std::string getTriggerType() {
         std::ostringstream os;
         os << "Timer (" << frameRate << " cycles/s)";
         return os.str();
     }
-private:
+protected:
     double frameRate; // Frame rate for triggering (Hz)
     static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_TIME;
 };
@@ -98,11 +114,16 @@ private:
 class EncoderTrigger:public Trigger {
 public:
     Go2Status set(GocatorControl& controller) {
+        Encoder encoder = controller.getEncoder();
+        if (travel_threshold < encoder.resolution || 
+            travel_threshold <= 0) {
+            travel_threshold = encoder.resolution;
+        }
         Go2System_SetEncoderPeriod(controller.getSystem(), travel_threshold);
         Go2System_SetEncoderTriggerMode(controller.getSystem(), travel_direction);
-        return Trigger::set(controller);
+        Go2System_EnableTriggerGate(controller.getSystem(), useTriggerGate);
+        return Go2System_SetTriggerSource(controller.getSystem(), triggerSource);
     }
-    // todo - set guards for valid travel threshold
     void setTravelThreshold(double threshold) {travel_threshold=threshold;}
     void setTravelDirection(TravelDirection direction) {
         switch(direction) {
@@ -133,7 +154,7 @@ public:
         }
         return os.str();
     }
-private:
+protected:
     double travel_threshold; // Desired trigger level (mm)
     Go2EncoderTriggerMode travel_direction; // Allowable trigger direction(s)
     static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_ENCODER;

@@ -15,6 +15,7 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
     if (verbose) {
         std::cout << SetResolutionResponse << std::endl;
     }
+    resetEncoder();
     /*
     std::string DisableTriggerGateResponse = getResponseString("Go2System_EnableTriggerGate", 
                                                    Go2System_EnableTriggerGate(sys.getSystem(), GO2_FALSE));
@@ -96,7 +97,7 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
                     }
                     for(unsigned int arrayIndex=0;arrayIndex<profilePointCount; ++arrayIndex) {
                         if (profileData[arrayIndex] != INVALID_RANGE_16BIT) {
-                            fidout << XOffset+XResolution*arrayIndex << "," << encoderCounter*lme.resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl << std::flush;
+                            fidout << XOffset+XResolution*arrayIndex << "," << (encoderCounter-startingEncoderReading)*lme.resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl << std::flush;
                         } else {
                             if (verbose) {
                                 std::cout << "Invalid reading, skipped." << std::endl;

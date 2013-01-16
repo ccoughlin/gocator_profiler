@@ -86,6 +86,7 @@ int main(int argc, char* argv[]) {
     
     // Configure trigger
     boost::shared_ptr<Trigger> trigger(GocatorConfigurator::configuredTrigger(configFilename));
+    trigger->set(control);
     if (verbose) {
         std::cout << "<< Triggering: " << trigger->getTriggerType() << ", gate ";
         if (trigger->isTriggerGateEnabled()) {
@@ -95,7 +96,7 @@ int main(int argc, char* argv[]) {
         }
         std::cout << " >>\n\n" << std::endl;
     }
-    trigger->set(control);
+    
     // Output profile  
     std::cout << "Connected to Gocator, monitoring encoder..." << std::endl;  
     recordProfile(control, outputFilename);
