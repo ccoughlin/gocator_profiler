@@ -15,7 +15,7 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
     if (verbose) {
         std::cout << SetResolutionResponse << std::endl;
     }
-
+    /*
     std::string DisableTriggerGateResponse = getResponseString("Go2System_EnableTriggerGate", 
                                                    Go2System_EnableTriggerGate(sys.getSystem(), GO2_FALSE));
     if (verbose) {
@@ -29,7 +29,7 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
     }
 
     Go2EncoderTriggerMode trigger_mode;
-    switch(encoder.trigger_direction) {
+    switch(encoder.travel_direction) {
         case FORWARD:
             trigger_mode = GO2_ENCODER_TRIGGER_MODE_IGNORE_REVERSE;
             break;
@@ -44,6 +44,7 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
     if (verbose) {
         std::cout << SetTriggerModeResponse << std::endl;
     }
+    */
 }
     
 // Records range profiles to disk as comma-delimited ASCII.

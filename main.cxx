@@ -7,6 +7,7 @@ extern "C" {
 }
 #include "gocatorsystem.h"
 #include "gocatorcontrol.h"
+#include "gocatorconfigurator.h"
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -19,62 +20,7 @@ extern "C" {
 namespace opts = boost::program_options;
 namespace filesystem = boost::filesystem;
 
-// Case insensitive char comparison, courtesy C++ Cookbook
-inline bool compareChars(char a, char b) {
-    return(toupper(a) == toupper(b));
-}
-
-bool compareStrings(const std::string& s1, const std::string& s2) {
-    return ((s1.size()==s2.size()) &&
-            std::equal(s1.begin(), s1.end(), s2.begin(), compareChars));
-}
-
-// Returns a configured linear encoder from the specified configuration file
-Encoder configureEncoder(std::string& configFile) {
-    if (!filesystem::exists(configFile.c_str())) {
-        std::cerr << "<< Unable to find configuration file '" << configFile << ",' aborting >>" << std::endl;
-        throw std::runtime_error("Configuration file not found");
-    }
-    Encoder configuredEncoder;
-    std::ifstream fidin;
-    fidin.open(configFile.c_str());
-    try {
-        if (fidin.is_open()) {
-            opts::options_description opt_desc("Available options");
-            opt_desc.add_options()
-                ("Encoder.model", opts::value<std::string>()->default_value("<unspecified>"), "Make/model of encoder")
-                ("Encoder.resolution", opts::value<double>()->default_value(0), "Resolution of encoder [mm per 'tick']")
-                ("Encoder.travel_threshold", opts::value<double>()->default_value(0), "Desired trigger threshold [mm]")
-                ("Encoder.travel_direction", opts::value<std::string>()->default_value("bidirectional"), "Trigger direction");
-            opts::variables_map config;
-            opts::store(opts::parse_config_file(fidin, opt_desc), config);
-            opts::notify(config);
-            configuredEncoder.modelName = config["Encoder.model"].as<std::string>();
-            configuredEncoder.resolution = config["Encoder.resolution"].as<double>();
-            assert(configuredEncoder.resolution > 0);
-            configuredEncoder.travel_threshold = config["Encoder.travel_threshold"].as<double>();
-            if (configuredEncoder.travel_threshold < configuredEncoder.resolution) {
-                std::cerr << "*** Invalid travel_threshold, setting to " << 2*configuredEncoder.resolution << " mm." << std::endl;
-                configuredEncoder.travel_threshold = 2*configuredEncoder.resolution;
-            }
-            enum TriggerDirection trig_dir;
-            std::string travel_direction = config["Encoder.travel_direction"].as<std::string>();
-            if (compareStrings(travel_direction, "forward")) {
-                trig_dir = FORWARD;
-            } else if (compareStrings(travel_direction, "backward")) {
-                trig_dir = BACKWARD;
-            } else {
-                trig_dir = BIDIRECTIONAL;
-            }
-            configuredEncoder.trigger_direction = trig_dir;
-        }
-    } catch (const boost::program_options::invalid_option_value& ex) {
-        std::cerr << "Encountered a bad config option in '" << configFile << ".'" << std::endl;
-        throw(ex);
-    }
-    return configuredEncoder;
-}
-
+// Thread wrapper to run profile recording
 void recordProfile(GocatorControl& control, std::string& outputFilename) {
     boost::thread thd(boost::bind(&GocatorControl::recordProfile, control, outputFilename));
     char character2;
@@ -131,28 +77,27 @@ int main(int argc, char* argv[]) {
     gocator.init();
 
     // Configure encoder 
-    Encoder lme = configureEncoder(configFilename);
+    Encoder lme = GocatorConfigurator::configuredEncoder(configFilename);
     control.configureEncoder(lme);
     if (verbose) {
-        std::cout << "\n<< Using " << lme.modelName << " encoder:" << std::endl;
-        std::cout << "\tResolution " << lme.resolution << " mm/tick" << std::endl;
-        std::string trig_dir;
-        switch(lme.trigger_direction) {
-            case FORWARD:
-                trig_dir = "forward";
-                break;
-            case BACKWARD:
-                trig_dir = "backward";
-                break;
-            default:
-                trig_dir = "bidirectional";
-        }
-        std::cout << "\tTrigger on " << trig_dir << " movement of more than " << lme.travel_threshold << " mm>>\n" << std::endl;
+        std::cout << "\n<< Using " << lme.modelName << " encoder, ";
+        std::cout << "resolution " << lme.resolution << " mm/tick" << std::endl;
     }
     
+    // Configure trigger
+    boost::shared_ptr<Trigger> trigger(GocatorConfigurator::configuredTrigger(configFilename));
+    if (verbose) {
+        std::cout << "<< Triggering: " << trigger->getTriggerType() << ", gate ";
+        if (trigger->isTriggerGateEnabled()) {
+            std::cout << "enabled";
+        } else {
+            std::cout << "disabled";
+        }
+        std::cout << " >>\n\n" << std::endl;
+    }
+    trigger->set(control);
     // Output profile  
     std::cout << "Connected to Gocator, monitoring encoder..." << std::endl;  
-    //control.recordProfile(outputFilename);
     recordProfile(control, outputFilename);
     return 0;
 }

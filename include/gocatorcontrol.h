@@ -9,6 +9,7 @@ extern "C" {
 #include <ios>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <boost/filesystem.hpp>
 #include <boost/thread/thread.hpp>
@@ -16,13 +17,11 @@ extern "C" {
 #define RECEIVE_TIMEOUT 100000
 #define INVALID_RANGE_16BIT 0x8000
 
-enum TriggerDirection {BIDIRECTIONAL, FORWARD, BACKWARD};
+enum TravelDirection {BIDIRECTIONAL, FORWARD, BACKWARD};
 
 typedef struct Encoder {
     std::string modelName; // Make/model of encoder
     double resolution; // Resolution of encoder (mm/"tick")
-    double travel_threshold; // Desired trigger level (mm)
-    enum TriggerDirection trigger_direction; // Allowable trigger direction(s)
 } Encoder;
 
 // Controls the specified GocatorSystem.
@@ -30,9 +29,112 @@ class GocatorControl {
     public:
         GocatorControl(GocatorSystem& go2system, bool verboseFlag=false):sys(go2system), verbose(verboseFlag) {}
         void configureEncoder(Encoder& encoder);
+        void configureTrigger();
         void recordProfile(std::string& outputFilename);
+        Go2System& getSystem() {return sys.getSystem();}
     private:
         GocatorSystem& sys;
         bool verbose;
         Encoder lme;
+};
+
+// Define the various types of trigger
+
+class Trigger {
+public:
+    Go2Status set(GocatorControl& controller) {
+        Go2System_EnableTriggerGate(controller.getSystem(), useTriggerGate);
+        return Go2System_SetTriggerSource(controller.getSystem(), triggerSource);
+    }
+    void setTriggerGate(bool enabled) {
+        useTriggerGate = enabled;
+    }
+    bool isTriggerGateEnabled() {return useTriggerGate;}
+    virtual std::string getTriggerType()=0;
+private:
+    static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_SOFTWARE;
+    Go2Bool useTriggerGate;
+};
+
+// Software trigger
+class SoftwareTrigger:public Trigger {
+public:
+    std::string getTriggerType() {
+        return std::string ("Software");
+    }
+private:
+    static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_SOFTWARE;
+};
+
+// Digital input trigger
+class InputTrigger:public Trigger {
+    std::string getTriggerType() {
+        return std::string("Digital Input");;
+    }
+private:
+    static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_INPUT;
+};
+
+// Time trigger
+class TimeTrigger:public Trigger {
+public:
+    Go2Status set(GocatorControl& controller) {
+        Go2System_SetFrameRate(controller.getSystem(), frameRate);
+        return Trigger::set(controller);
+    }
+    // todo - set guards for valid frame rate
+    void setFrameRate(double framesPerSecond) {frameRate=framesPerSecond;}
+    std::string getTriggerType() {
+        std::ostringstream os;
+        os << "Timer (" << frameRate << " cycles/s)";
+        return os.str();
+    }
+private:
+    double frameRate; // Frame rate for triggering (Hz)
+    static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_TIME;
+};
+
+// Encoder Trigger
+class EncoderTrigger:public Trigger {
+public:
+    Go2Status set(GocatorControl& controller) {
+        Go2System_SetEncoderPeriod(controller.getSystem(), travel_threshold);
+        Go2System_SetEncoderTriggerMode(controller.getSystem(), travel_direction);
+        return Trigger::set(controller);
+    }
+    // todo - set guards for valid travel threshold
+    void setTravelThreshold(double threshold) {travel_threshold=threshold;}
+    void setTravelDirection(TravelDirection direction) {
+        switch(direction) {
+        case FORWARD:
+            travel_direction = GO2_ENCODER_TRIGGER_MODE_IGNORE_REVERSE;
+            break;
+        case BACKWARD:
+            travel_direction = GO2_ENCODER_TRIGGER_MODE_TRACK_REVERSE;
+            break;
+        case BIDIRECTIONAL:
+        default:
+            travel_direction = GO2_ENCODER_TRIGGER_MODE_BIDIRECTIONAL;
+        }
+    }
+    std::string getTriggerType() {
+        std::ostringstream os;
+        os << "Encoder (" << travel_threshold << " mm, ";
+        switch(travel_direction) {
+            case GO2_ENCODER_TRIGGER_MODE_IGNORE_REVERSE:
+                os << " forward motion only)";
+                break;
+            case GO2_ENCODER_TRIGGER_MODE_TRACK_REVERSE:
+                os << " backward motion only)";
+                break;
+            case GO2_ENCODER_TRIGGER_MODE_BIDIRECTIONAL:
+            default:
+                os << " forward/backward motion)";
+        }
+        return os.str();
+    }
+private:
+    double travel_threshold; // Desired trigger level (mm)
+    Go2EncoderTriggerMode travel_direction; // Allowable trigger direction(s)
+    static const Go2TriggerSource triggerSource = GO2_TRIGGER_SOURCE_ENCODER;
 };
