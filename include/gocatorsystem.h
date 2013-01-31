@@ -29,7 +29,8 @@ class GocatorSystem {
         virtual ~GocatorSystem();
 
         void init(Go2UInt32 deviceID, 
-                  Go2AddressInfo desiredNetworkAddress=defaultGocatorAddress());
+                  Go2AddressInfo desiredNetworkAddress=defaultGocatorAddress(),
+                  bool reconfigureAddress=false);
         Go2User getUser() {
             return user;
         }

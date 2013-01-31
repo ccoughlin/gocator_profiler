@@ -8,10 +8,15 @@ extern "C" {
 #include <string>
 #include <iostream>
 
+typedef struct gocatorAddress {
+    Go2AddressInfo addr;
+    bool reconfigure;
+} GocatorAddress;
+
 class GocatorConfigurator {
 public:
     static Go2UInt32 deviceID(std::string& configFile);
     static Encoder configuredEncoder(std::string& configFile);
     static Trigger* configuredTrigger(std::string& configFile);
-    static Go2AddressInfo configuredNetworkConnection(std::string& configFile);
+    static GocatorAddress configuredNetworkConnection(std::string& configFile);
 };

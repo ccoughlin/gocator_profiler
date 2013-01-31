@@ -16,7 +16,9 @@ GocatorSystem::~GocatorSystem() {
 }
 
 // Initializes specified Gocator device
-void GocatorSystem::init(Go2UInt32 deviceID, Go2AddressInfo desiredNetworkAddress) {
+// If reconfigureAddress is true, ensure the device is using the 
+// specified IP Address and reset as necessary.
+void GocatorSystem::init(Go2UInt32 deviceID, Go2AddressInfo desiredNetworkAddress, bool reconfigureAddress) {
     int MAX_SENSORS = 10;
     std::string InitializeResponse, ConstructResponse, DiscoverResponse, SetAddressResponse, ConnectResponse, LoginResponse;
     InitializeResponse = getResponseString("Go2API_Initialize", Go2Api_Initialize());
@@ -37,18 +39,31 @@ void GocatorSystem::init(Go2UInt32 deviceID, Go2AddressInfo desiredNetworkAddres
     for(i=0;i<numDevices;i++) {
         currentDevice = deviceIDs[i];
         if (*currentDevice==deviceID) {
-            Go2AddressInfo* deviceAddress = deviceAddresses[i];
-            if(deviceAddress->useDhcp!=desiredNetworkAddress.useDhcp ||
-               deviceAddress->address!=desiredNetworkAddress.address ||
-               deviceAddress->mask!=desiredNetworkAddress.mask ||
-               deviceAddress->gateway!=desiredNetworkAddress.gateway) {
-                SetAddressResponse = getResponseString("Go2System_SetAddress",
-                                                       Go2System_SetAddress(deviceID, &desiredNetworkAddress));
+            if(reconfigureAddress) {
                 if (verbose) {
-                    std::cout << SetAddressResponse << std::endl;
+                    std::cout << "<< Verifying system IP address >>" << std::endl;
                 }
-                Go2System_Reset(sys);
-                resetIP = true;
+                Go2AddressInfo* deviceAddress = deviceAddresses[i];
+                if(deviceAddress->useDhcp!=desiredNetworkAddress.useDhcp ||
+                   deviceAddress->address!=desiredNetworkAddress.address ||
+                   deviceAddress->mask!=desiredNetworkAddress.mask ||
+                   deviceAddress->gateway!=desiredNetworkAddress.gateway) {
+                    if (verbose) {
+                        std::cout << "<< Updating system IP address >>" << std::endl;
+                    }
+                    SetAddressResponse = getResponseString("Go2System_SetAddress",
+                                                           Go2System_SetAddress(deviceID, &desiredNetworkAddress));
+                    if (verbose) {
+                        std::cout << SetAddressResponse << std::endl;
+                        std::cout << "<< System rebooting >>" << std::endl;
+                    }
+                    Go2System_Reset(sys);
+                    resetIP = true;
+                } else {
+                    if(verbose) {
+                        std::cout << "<< System IP OK >>" << std::endl;
+                    }
+                }
             }
             foundDevice = true;
             break;
@@ -65,6 +80,9 @@ void GocatorSystem::init(Go2UInt32 deviceID, Go2AddressInfo desiredNetworkAddres
     if (resetIP) {
         // Need to wait for device to reboot with new settings
         ConnectResponse = getResponseString("Go2System_Reconnect", Go2System_Reconnect(sys, desiredNetworkAddress.address));
+        if (verbose) {
+            std::cout << "<< Reboot complete >>" << std::endl;
+        }        
     } else {
         ConnectResponse = getResponseString("Go2System_Connect", Go2System_Connect(sys, desiredNetworkAddress.address));        
     }

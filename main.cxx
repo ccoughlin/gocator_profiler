@@ -74,8 +74,10 @@ int main(int argc, char* argv[]) {
     // Startup and login
     GocatorSystem gocator(verbose);
     GocatorControl control(gocator, verbose);
+    GocatorAddress configuredAddress = GocatorConfigurator::configuredNetworkConnection(configFilename);
     gocator.init(GocatorConfigurator::deviceID(configFilename), 
-                 GocatorConfigurator::configuredNetworkConnection(configFilename));
+                 configuredAddress.addr, 
+                 configuredAddress.reconfigure);
 
     // Configure encoder 
     Encoder lme = GocatorConfigurator::configuredEncoder(configFilename);

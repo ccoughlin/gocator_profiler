@@ -144,18 +144,20 @@ Trigger* GocatorConfigurator::configuredTrigger(std::string& configFile) {
 }
 
 // Returns a Go2AddressInfo (Ethernet connection) from the config file
-Go2AddressInfo GocatorConfigurator::configuredNetworkConnection(std::string& configFile) {
+GocatorAddress GocatorConfigurator::configuredNetworkConnection(std::string& configFile) {
     if (!filesystem::exists(configFile.c_str())) {
         std::cerr << "<< Unable to find configuration file '" << configFile << ",' aborting >>" << std::endl;
         throw std::runtime_error("Configuration file not found");
     }
     try {
+        GocatorAddress GoAddress;
         Go2AddressInfo configuredAddress;
         std::ifstream fidin;
         fidin.open(configFile.c_str());
         if (fidin.is_open()) {
             opts::options_description opt_desc("Available options");
             opt_desc.add_options()
+                ("Network.reconfigure", opts::value<std::string>()->default_value("false"), "Reconfigure?")
                 ("Network.use_dhcp", opts::value<std::string>()->default_value("false"), "Use DHCP?")
                 ("Network.address", opts::value<std::string>()->default_value("192.168.1.10"), "IP Address")
                 ("Network.subnet_mask", opts::value<std::string>()->default_value("255.255.255.0"), "Subnet Mask")
@@ -163,6 +165,8 @@ Go2AddressInfo GocatorConfigurator::configuredNetworkConnection(std::string& con
             opts::variables_map config;
             opts::store(opts::parse_config_file(fidin, opt_desc, true), config);
             opts::notify(config);
+            std::string reconfigureAddress = config["Network.reconfigure"].as<std::string>();
+            GoAddress.reconfigure = compareStrings(reconfigureAddress, "true");
             std::string useDHCP = config["Network.use_dhcp"].as<std::string>();
             if(compareStrings(useDHCP, "true")) {
                 configuredAddress.useDhcp = true;
@@ -176,7 +180,8 @@ Go2AddressInfo GocatorConfigurator::configuredNetworkConnection(std::string& con
             std::string gateway = config["Network.gateway"].as<std::string>();
             Go2IPAddress_Parse(reinterpret_cast<const signed char*>(gateway.c_str()), &configuredAddress.gateway);
         }
-    return configuredAddress;
+        GoAddress.addr = configuredAddress;
+        return GoAddress;
     } catch (const boost::program_options::invalid_option_value& ex) {
         std::cerr << "Encountered a bad config option in '" << configFile << ".'" << std::endl;
         throw(ex);
