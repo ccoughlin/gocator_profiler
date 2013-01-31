@@ -10,6 +10,8 @@ extern "C" {
 
 class GocatorConfigurator {
 public:
+    static Go2UInt32 deviceID(std::string& configFile);
     static Encoder configuredEncoder(std::string& configFile);
     static Trigger* configuredTrigger(std::string& configFile);
+    static Go2AddressInfo configuredNetworkConnection(std::string& configFile);
 };

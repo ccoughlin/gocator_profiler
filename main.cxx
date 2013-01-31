@@ -74,7 +74,8 @@ int main(int argc, char* argv[]) {
     // Startup and login
     GocatorSystem gocator(verbose);
     GocatorControl control(gocator, verbose);
-    gocator.init();
+    gocator.init(GocatorConfigurator::deviceID(configFilename), 
+                 GocatorConfigurator::configuredNetworkConnection(configFilename));
 
     // Configure encoder 
     Encoder lme = GocatorConfigurator::configuredEncoder(configFilename);

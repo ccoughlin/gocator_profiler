@@ -16,36 +16,6 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
         std::cout << SetResolutionResponse << std::endl;
     }
     resetEncoder();
-    /*
-    std::string DisableTriggerGateResponse = getResponseString("Go2System_EnableTriggerGate", 
-                                                   Go2System_EnableTriggerGate(sys.getSystem(), GO2_FALSE));
-    if (verbose) {
-        std::cout << DisableTriggerGateResponse << std::endl;
-    }
-
-    std::string SetEncoderPeriodResponse = getResponseString("Go2System_SetEncoderPeriod", 
-                                                 Go2System_SetEncoderPeriod(sys.getSystem(), lme.travel_threshold));
-    if (verbose) {
-        std::cout << SetEncoderPeriodResponse << std::endl;
-    }
-
-    Go2EncoderTriggerMode trigger_mode;
-    switch(encoder.travel_direction) {
-        case FORWARD:
-            trigger_mode = GO2_ENCODER_TRIGGER_MODE_IGNORE_REVERSE;
-            break;
-        case BACKWARD:
-            trigger_mode = GO2_ENCODER_TRIGGER_MODE_TRACK_REVERSE;
-            break;
-        default:
-            trigger_mode = GO2_ENCODER_TRIGGER_MODE_BIDIRECTIONAL;
-    }
-    std::string SetTriggerModeResponse = getResponseString("Go2System_SetEncoderTriggerMode", 
-                                               Go2System_SetEncoderTriggerMode(sys.getSystem(), trigger_mode));
-    if (verbose) {
-        std::cout << SetTriggerModeResponse << std::endl;
-    }
-    */
 }
     
 // Records range profiles to disk as comma-delimited ASCII.

@@ -13,6 +13,32 @@ bool compareStrings(const std::string& s1, const std::string& s2) {
             std::equal(s1.begin(), s1.end(), s2.begin(), compareChars));
 }
 
+// Returns the device serial number from the config file
+Go2UInt32 GocatorConfigurator::deviceID(std::string& configFile) {
+    if (!filesystem::exists(configFile.c_str())) {
+        std::cerr << "<< Unable to find configuration file '" << configFile << ",' aborting >>" << std::endl;
+        throw std::runtime_error("Configuration file not found");
+    }
+    try {
+        Go2UInt32 deviceID;
+        std::ifstream fidin;
+        fidin.open(configFile.c_str());
+        if (fidin.is_open()) {
+            opts::options_description opt_desc("Available options");
+            opt_desc.add_options()
+                ("System.device_id", opts::value<Go2UInt32>()->default_value(0000000), "Device Serial Number");
+            opts::variables_map config;
+            opts::store(opts::parse_config_file(fidin, opt_desc, true), config);
+            opts::notify(config);
+            deviceID = config["System.device_id"].as<Go2UInt32>();
+        }
+        return deviceID;
+    } catch (const boost::program_options::invalid_option_value& ex) {
+        std::cerr << "Encountered a bad config option in '" << configFile << ".'" << std::endl;
+        throw(ex);
+    }    
+}
+
 // Returns a configured encoder from the specified configuration file
 Encoder GocatorConfigurator::configuredEncoder(std::string& configFile) {
     if (!filesystem::exists(configFile.c_str())) {
@@ -115,4 +141,44 @@ Trigger* GocatorConfigurator::configuredTrigger(std::string& configFile) {
         std::cerr << "Encountered a bad config option in '" << configFile << ".'" << std::endl;
         throw(ex);
     } 
+}
+
+// Returns a Go2AddressInfo (Ethernet connection) from the config file
+Go2AddressInfo GocatorConfigurator::configuredNetworkConnection(std::string& configFile) {
+    if (!filesystem::exists(configFile.c_str())) {
+        std::cerr << "<< Unable to find configuration file '" << configFile << ",' aborting >>" << std::endl;
+        throw std::runtime_error("Configuration file not found");
+    }
+    try {
+        Go2AddressInfo configuredAddress;
+        std::ifstream fidin;
+        fidin.open(configFile.c_str());
+        if (fidin.is_open()) {
+            opts::options_description opt_desc("Available options");
+            opt_desc.add_options()
+                ("Network.use_dhcp", opts::value<std::string>()->default_value("false"), "Use DHCP?")
+                ("Network.address", opts::value<std::string>()->default_value("192.168.1.10"), "IP Address")
+                ("Network.subnet_mask", opts::value<std::string>()->default_value("255.255.255.0"), "Subnet Mask")
+                ("Network.gateway", opts::value<std::string>()->default_value("0.0.0.0"), "Gateway");
+            opts::variables_map config;
+            opts::store(opts::parse_config_file(fidin, opt_desc, true), config);
+            opts::notify(config);
+            std::string useDHCP = config["Network.use_dhcp"].as<std::string>();
+            if(compareStrings(useDHCP, "true")) {
+                configuredAddress.useDhcp = true;
+            } else {
+                configuredAddress.useDhcp = false;
+            }
+            std::string networkAddress = config["Network.address"].as<std::string>();
+            Go2IPAddress_Parse(reinterpret_cast<const signed char*>(networkAddress.c_str()), &configuredAddress.address);
+            std::string netMask = config["Network.subnet_mask"].as<std::string>();
+            Go2IPAddress_Parse(reinterpret_cast<const signed char*>(netMask.c_str()), &configuredAddress.mask);
+            std::string gateway = config["Network.gateway"].as<std::string>();
+            Go2IPAddress_Parse(reinterpret_cast<const signed char*>(gateway.c_str()), &configuredAddress.gateway);
+        }
+    return configuredAddress;
+    } catch (const boost::program_options::invalid_option_value& ex) {
+        std::cerr << "Encountered a bad config option in '" << configFile << ".'" << std::endl;
+        throw(ex);
+    }    
 }

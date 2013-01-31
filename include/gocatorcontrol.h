@@ -29,7 +29,6 @@ class GocatorControl {
     public:
         GocatorControl(GocatorSystem& go2system, bool verboseFlag=false):sys(go2system), verbose(verboseFlag) {}
         void configureEncoder(Encoder& encoder);
-        void configureTrigger();
         void recordProfile(std::string& outputFilename);
         Go2System& getSystem() {return sys.getSystem();}
         Encoder& getEncoder() {return lme;}

@@ -5,11 +5,12 @@ extern "C" {
 #include "go2response.h"
 #include <iostream>
 #include <string>
+#include <stdexcept>
 #include <cstring>
 
 // Creates and initializes a Gocator 20x0 system.
 // GocatorSystem go2system();
-// go2system.init();
+// go2system.init(deviceSerialNumber);
 // Return the created and logged-in system: go2system.getSystem();
 class GocatorSystem {
     public:
@@ -21,12 +22,14 @@ class GocatorSystem {
         user(GO2_USER_ADMIN), sys(0), verbose(verboseFlag) {
             setPassword(pword);
         }
-        GocatorSystem(bool verboseFlag=false):user(GO2_USER_ADMIN), sys(0), verbose(verboseFlag) {
+        GocatorSystem(bool verboseFlag=false):
+        user(GO2_USER_ADMIN), sys(0), verbose(verboseFlag) {
             password = new Go2Char();
         }
         virtual ~GocatorSystem();
 
-        void init();
+        void init(Go2UInt32 deviceID, 
+                  Go2AddressInfo desiredNetworkAddress=defaultGocatorAddress());
         Go2User getUser() {
             return user;
         }
@@ -40,6 +43,17 @@ class GocatorSystem {
         }
 
     private:
+        static Go2AddressInfo defaultGocatorAddress() {
+            Go2IPAddress defaultMask, defaultGateway;
+            Go2IPAddress_Parse(reinterpret_cast<const signed char*>("255.255.255.0"), &defaultMask);
+            Go2IPAddress_Parse(reinterpret_cast<const signed char*>("0.0.0.0"), &defaultGateway);
+            Go2AddressInfo defaultAddress;
+            defaultAddress.useDhcp = false;
+            defaultAddress.address = GO2_DEFAULT_IP_ADDRESS;
+            defaultAddress.mask = defaultMask;
+            defaultAddress.gateway = defaultGateway;
+            return defaultAddress;            
+        }
     Go2User user;
     Go2Char* password;
     Go2System sys;
