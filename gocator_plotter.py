@@ -104,6 +104,9 @@ class UI(wx.Frame):
                                          help="Reads and plots an XYZ CSV data file")
         self.Bind(wx.EVT_MENU, self.on_plot_data, id=self.plotdata_mnui.GetId())
         self.file_mnu.AppendItem(self.plotdata_mnui)
+        self.plotrawdata = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Plot Raw Data",
+                                           help="Plot raw vs. filtered data", kind=wx.ITEM_CHECK)
+        self.file_mnu.AppendItem(self.plotrawdata)
         self.setzlim_mnui = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Set Z Axis Limits...\tCTRL+Z",
                                         help="Sets the limits of the Z Axis")
         self.Bind(wx.EVT_MENU, self.on_setzlim, id=self.setzlim_mnui.GetId())
@@ -130,7 +133,7 @@ class UI(wx.Frame):
         self.axes.grid(True)
         try:
             wx.BeginBusyCursor()
-            x, y, z = np.genfromtxt(data_fname, delimiter=",", unpack=True)
+            x, y, z = self.get_data(data_fname)
             self.axes.plot(x, y, z, c='r', linestyle='', marker='.')
             self.axes.set_xlabel('X Position [mm]')
             self.axes.set_ylabel('Y Position [mm]')
@@ -150,9 +153,22 @@ class UI(wx.Frame):
             err_dlg.ShowModal()
             err_dlg.Destroy()
             return
-
         finally:
             wx.EndBusyCursor()
+
+    def get_data(self, data_fname):
+        """Reads the specified data file, optionally filtering the data before returning it as X,Y,Z."""
+        x, y, z = np.genfromtxt(data_fname, delimiter=",", unpack=True)
+        if not self.plotrawdata.IsChecked():
+            # First pass - laser scanner records invalid ranges as -32.768
+            xi = x[z!=-32.768]
+            yi = y[z!=-32.768]
+            zi = z[z!=-32.768]
+        else:
+            xi = x
+            yi = y
+            zi = z
+        return xi, yi, zi
 
     def on_setzlim(self, evt):
         """Handles request to reset the Z axis limits"""
