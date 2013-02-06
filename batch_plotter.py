@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Wed Feb  6 08:00:57 2013
@@ -5,7 +6,6 @@ Created on Wed Feb  6 08:00:57 2013
 @author: ccoughlin
 """
 
-import glob
 import multiprocessing
 import os
 import os.path
@@ -56,7 +56,7 @@ def generate_plotfname(datafname, extension='png'):
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     try:
-        file_list = glob.glob(sys.argv[1])
+        file_list = sys.argv[1:]
     except IndexError: # no args specified
         print("Usage: batch_plotter.py files_to_plot")
         print("e.g. batch_plotter.py data/*.csv")
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         for fname in file_list:
             generate_scatterplot(fname, generate_plotfname(fname))
     else:
-        num_processes = multiprocessing.cpu_count() - 1
+        num_processes = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=num_processes)
         print("Multiple CPUs detected, running {0} processes.".format(num_processes))
         for fname in file_list:
