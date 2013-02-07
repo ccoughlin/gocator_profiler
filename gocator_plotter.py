@@ -118,6 +118,11 @@ class UI(wx.Frame):
                                              help="Plots the laser profile as an interpolated surface", kind=wx.ITEM_RADIO)
         self.Bind(wx.EVT_MENU, self.on_plot_type, id=self.plot_surface_mnui.GetId())
         plottype_mnu.AppendItem(self.plot_surface_mnui)
+        self.plot_wireframe_mnui = wx.MenuItem(plottype_mnu, wx.ID_ANY, text="Fitted Wireframe Surface",
+                                                help="Plots the laser profile as an interpolated wireframe surface", 
+                                                kind=wx.ITEM_RADIO)
+        plottype_mnu.AppendItem(self.plot_wireframe_mnui)
+        self.Bind(wx.EVT_MENU, self.on_plot_type, id=self.plot_wireframe_mnui.GetId())
         self.file_mnu.AppendSubMenu(plottype_mnu, "Type Of Plot")
         self.plotrawdata = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Plot Raw Data",
                                            help="Plot raw vs. filtered data", kind=wx.ITEM_CHECK)
@@ -155,15 +160,22 @@ class UI(wx.Frame):
                 # Plot a point cloud
                 self.axes.plot(x, y, z, c='#4F6581', linestyle='', marker=',', rasterized=True)
             else:
-                # Interpolate a surface from the point cloud to plot
                 xi = np.linspace(min(x), max(x), num=100)
                 yi = np.linspace(min(y), max(y), num=100)
                 X, Y = np.meshgrid(xi, yi)
                 Z = griddata(x, y, z, xi, yi)
-                surf = self.axes.plot_surface(X, Y, Z, rstride=3, cstride=3, cmap=cm.get_cmap('spectral'), 
+                if self.plot_surface_mnui.IsChecked():
+                    # Interpolate a surface from the point cloud to plot
+                    surf = self.axes.plot_surface(X, Y, Z, rstride=3, cstride=3, cmap=cm.get_cmap('spectral'), 
+                                              linewidth=1, antialiased=True)
+                    self.figure.colorbar(surf)
+                elif self.plot_wireframe_mnui.IsChecked():
+                    # Interpolate a wireframe surface from the point cloud to plot
+                    # Uses a higher resolution presentation than the surface - surface tends to bog down
+                    # on some systems with stride set to 1
+                    surf = self.axes.plot_wireframe(X, Y, Z, rstride=1, cstride=1, color='#4F6581',
                                               linewidth=1, antialiased=True)
                 self.axes.set_zlim3d(np.min(Z), np.max(Z))
-                self.figure.colorbar(surf)
             self.axes.set_xlabel('X Position [mm]')
             self.axes.set_ylabel('Y Position [mm]')
             self.axes.set_zlabel('Z Position [mm]')
