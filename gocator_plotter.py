@@ -9,10 +9,13 @@ __author__ = 'Chris R. Coughlin'
 
 import wx
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.mlab import griddata
+from matplotlib import cm
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx
 import numpy as np
+import os.path
 
 widget_margin = 3 # Default margin around widgets
 ctrl_pct = 1.0 # Default to 100% resizing factor for controls
@@ -72,8 +75,10 @@ class UI(wx.Frame):
     """Basic wxPython user interface"""
 
     def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, parent=None, title="Gocator Profile Plotter", *args, **kwargs)
+        self.base_title = "Gocator Profile Plotter"
+        wx.Frame.__init__(self, parent=None, title=self.base_title, *args, **kwargs)
         self.init_ui()
+        self.data_fname = None
 
     def init_ui(self):
         """Creates the user interface"""
@@ -104,6 +109,16 @@ class UI(wx.Frame):
                                          help="Reads and plots an XYZ CSV data file")
         self.Bind(wx.EVT_MENU, self.on_plot_data, id=self.plotdata_mnui.GetId())
         self.file_mnu.AppendItem(self.plotdata_mnui)
+        plottype_mnu = wx.Menu()
+        self.plot_pointcloud_mnui = wx.MenuItem(plottype_mnu, wx.ID_ANY, text="Point Cloud",
+                                                help="Plots the laser profile as a point cloud", kind=wx.ITEM_RADIO)
+        self.Bind(wx.EVT_MENU, self.on_plot_type, id=self.plot_pointcloud_mnui.GetId())
+        plottype_mnu.AppendItem(self.plot_pointcloud_mnui)
+        self.plot_surface_mnui = wx.MenuItem(plottype_mnu, wx.ID_ANY, text="Fitted Surface",
+                                             help="Plots the laser profile as an interpolated surface", kind=wx.ITEM_RADIO)
+        self.Bind(wx.EVT_MENU, self.on_plot_type, id=self.plot_surface_mnui.GetId())
+        plottype_mnu.AppendItem(self.plot_surface_mnui)
+        self.file_mnu.AppendSubMenu(plottype_mnu, "Type Of Plot")
         self.plotrawdata = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Plot Raw Data",
                                            help="Plot raw vs. filtered data", kind=wx.ITEM_CHECK)
         self.file_mnu.AppendItem(self.plotrawdata)
@@ -124,7 +139,9 @@ class UI(wx.Frame):
         wildcards = "|".join([txt_wildcards, allfiles_wildcard])
         file_dlg = wx.FileDialog(parent=self, message="Please specify a file", wildcard=wildcards, style=wx.FD_OPEN)
         if file_dlg.ShowModal() == wx.ID_OK:
-            self.plot_data(file_dlg.GetPath())
+            self.data_fname = file_dlg.GetPath()
+            self.plot_data(self.data_fname)
+            self.SetTitle(' - '.join([self.base_title, os.path.basename(self.data_fname)]))
 
     def plot_data(self, data_fname):
         """Reads and plots the specified data file"""
@@ -134,7 +151,19 @@ class UI(wx.Frame):
         try:
             wx.BeginBusyCursor()
             x, y, z = self.get_data(data_fname)
-            self.axes.plot(x, y, z, c='r', linestyle='', marker='.')
+            if self.plot_pointcloud_mnui.IsChecked():
+                # Plot a point cloud
+                self.axes.plot(x, y, z, c='#4F6581', linestyle='', marker=',', rasterized=True)
+            else:
+                # Interpolate a surface from the point cloud to plot
+                xi = np.linspace(min(x), max(x), num=100)
+                yi = np.linspace(min(y), max(y), num=100)
+                X, Y = np.meshgrid(xi, yi)
+                Z = griddata(x, y, z, xi, yi)
+                surf = self.axes.plot_surface(X, Y, Z, rstride=3, cstride=3, cmap=cm.get_cmap('spectral'), 
+                                              linewidth=1, antialiased=True)
+                self.axes.set_zlim3d(np.min(Z), np.max(Z))
+                self.figure.colorbar(surf)
             self.axes.set_xlabel('X Position [mm]')
             self.axes.set_ylabel('Y Position [mm]')
             self.axes.set_zlabel('Z Position [mm]')
@@ -188,6 +217,11 @@ class UI(wx.Frame):
                         self.axes.set_zlim3d((min_val, max_val))
                     self.refresh_plot()
             rng_dlg.Destroy()
+
+    def on_plot_type(self, evt):
+        """Handles change in choice of plot type"""
+        if hasattr(self, 'data_fname'):
+            self.plot_data(self.data_fname)
 
     def refresh_plot(self):
         """Forces plot to redraw itself"""

@@ -12,6 +12,7 @@ import os.path
 import sys
 
 import numpy as np
+import scipy.signal
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.cm as cm
@@ -34,7 +35,7 @@ def generate_scatterplot(datafname, imgfname):
     xi = x[z!=-32.768]
     yi = y[z!=-32.768]
     zi = z[z!=-32.768]
-    scatter_plt = axes.scatter(xi, yi, c=zi, cmap=cm.get_cmap("Set1"))
+    scatter_plt = axes.scatter(xi, yi, c=zi, cmap=cm.get_cmap("Set1"), marker=',')
     axes.grid(True)
     axes.axis([np.min(xi), np.max(xi), np.min(yi), np.max(yi)])
     axes.set_title(os.path.basename(datafname))
