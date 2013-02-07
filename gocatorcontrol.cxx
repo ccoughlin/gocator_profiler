@@ -17,6 +17,80 @@ void GocatorControl::configureEncoder(Encoder& encoder) {
     }
     resetEncoder();
 }
+
+// Configures Gocator's filtration
+void GocatorControl::configureFilter(GocatorFilter& filter) {
+    std::string setSamplingResponse = getResponseString("Go2System_SetXResamplingType", 
+                                                        Go2System_SetXResamplingType(sys.getSystem(), filter.sampling));
+    std::string setHGapFillResponse = getResponseString("Go2System_SetXGapFillingEnabled",
+                                                        Go2System_SetXGapFillingEnabled(sys.getSystem(), filter.xGap));
+    if (filter.xGap) {
+        Go2Double hGap;
+        Go2Double hGapMax = Go2System_XGapFillingWindowMax(sys.getSystem());
+        Go2Double hGapMin = Go2System_XGapFillingWindowMin(sys.getSystem());
+        if (filter.xGap > hGapMax) {
+            hGap = hGapMax;
+        } else if (filter.xGap < hGapMin) {
+            hGap = hGapMin;
+        }
+        setHGapFillResponse = Go2System_SetXGapFillingWindow(sys.getSystem(), hGap);
+    }
+    if (verbose) {
+        std::cout << setHGapFillResponse << std::endl;
+    }
+
+    std::string setVGapFillResponse = getResponseString("Go2System_SetYGapFillingEnabled",
+                                                        Go2System_SetYGapFillingEnabled(sys.getSystem(), filter.yGap));
+    if (filter.yGap) {
+        Go2Double vGap;
+        Go2Double vGapMax = Go2System_YGapFillingWindowMax(sys.getSystem());
+        Go2Double vGapMin = Go2System_YGapFillingWindowMin(sys.getSystem());
+        if (filter.yGap > vGapMax) {
+            vGap = vGapMax;
+        } else if (filter.xGap < vGapMin) {
+            vGap = vGapMin;
+        }
+        setVGapFillResponse = Go2System_SetYGapFillingWindow(sys.getSystem(), vGap);
+    }
+    if (verbose) {
+        std::cout << setVGapFillResponse << std::endl;
+    }
+
+
+    std::string setHSmoothResponse = getResponseString("Go2System_SetXSmoothingEnabled",
+                                                            Go2System_SetXSmoothingEnabled(sys.getSystem(), filter.xSmooth));
+    if (filter.xSmooth) {
+        Go2Double hSmooth;
+        Go2Double hSmoothMax = Go2System_XSmoothingWindowMax(sys.getSystem());
+        Go2Double hSmoothMin = Go2System_XSmoothingWindowMin(sys.getSystem());
+        if (filter.xSmooth > hSmoothMax) {
+            hSmooth = hSmoothMax;
+        } else if (filter.xSmooth < hSmoothMin) {
+            hSmooth = hSmoothMin;
+        }
+        setHSmoothResponse = Go2System_SetXSmoothingWindow(sys.getSystem(), hSmooth);
+    }
+    if (verbose) {
+        std::cout << setHSmoothResponse << std::endl;
+    }
+
+    std::string setVSmoothResponse = getResponseString("Go2System_SetYSmoothingEnabled",
+                                                                Go2System_SetYSmoothingEnabled(sys.getSystem(), filter.ySmooth));
+    if (filter.ySmooth) {
+        Go2Double vSmooth;
+        Go2Double vSmoothMax = Go2System_YSmoothingWindowMax(sys.getSystem());
+        Go2Double vSmoothMin = Go2System_YSmoothingWindowMin(sys.getSystem());
+        if (filter.ySmooth > vSmoothMax) {
+            vSmooth = vSmoothMax;
+        } else if (filter.ySmooth < vSmoothMin) {
+            vSmooth = vSmoothMin;
+        }
+        setVSmoothResponse = Go2System_SetYSmoothingWindow(sys.getSystem(), vSmooth);
+    }
+    if (verbose) {
+        std::cout << setVSmoothResponse << std::endl;
+    }
+}
     
 // Records range profiles to disk as comma-delimited ASCII.
 void GocatorControl::recordProfile(std::string& outputFilename) {

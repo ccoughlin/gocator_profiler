@@ -19,16 +19,23 @@ extern "C" {
 
 enum TravelDirection {BIDIRECTIONAL, FORWARD, BACKWARD};
 
-typedef struct Encoder {
+typedef struct gocatorEncoder {
     std::string modelName; // Make/model of encoder
     double resolution; // Resolution of encoder (mm/"tick")
 } Encoder;
+
+typedef struct gocatorFilter {
+    bool xGap, yGap, xSmooth, ySmooth;
+    Go2Double xSmoothWindow, ySmoothWindow, xGapWindow, yGapWindow;
+    Go2ResamplingType sampling;
+} GocatorFilter;
 
 // Controls the specified GocatorSystem.
 class GocatorControl {
     public:
         GocatorControl(GocatorSystem& go2system, bool verboseFlag=false):sys(go2system), verbose(verboseFlag) {}
         void configureEncoder(Encoder& encoder);
+        void configureFilter(GocatorFilter& filter);
         void recordProfile(std::string& outputFilename);
         Go2System& getSystem() {return sys.getSystem();}
         Encoder& getEncoder() {return lme;}
