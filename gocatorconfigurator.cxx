@@ -169,7 +169,6 @@ GocatorFilter GocatorConfigurator::configuredFilter(std::string& configFile) {
         opts::store(opts::parse_config_file(fidin, opt_desc, true), config);
         opts::notify(config);
         std::string resolution = config["Filtering.scanner_resolution"].as<std::string>();
-        std::cout << resolution;
         if(compareStrings(resolution, "low")) {
             filter.sampling = GO2_RESAMPLING_TYPE_MAX_SPEED;
         } else if (compareStrings(resolution, "high")) {
@@ -177,7 +176,6 @@ GocatorFilter GocatorConfigurator::configuredFilter(std::string& configFile) {
         } else {
             filter.sampling = GO2_RESAMPLING_TYPE_BALANCED;
         }
-        std::cout << filter.sampling << std::endl;
 
         double xgap = config["Filtering.xgap_fill"].as<double>();
         if (xgap > 0) {

@@ -101,51 +101,54 @@ int main(int argc, char* argv[]) {
             } else {
                 std::cout << "disabled";
             }
-            std::cout << " >>\n\n" << std::endl;
+            std::cout << " >>\n" << std::endl;
         }
 
         // Configure filtration
         GocatorFilter filtration = GocatorConfigurator::configuredFilter(configFilename);
-        switch (filtration.sampling) {
-            case 0:
-            std::cout << "using high resolution" << std::endl;
-            break;
-            case 1:
-            std::cout << "using balanced resolution" << std::endl;
-            break;
-            case 2:
-            std::cout << "using low resolution" << std::endl;
-        }
+        if (verbose) {
+            std::cout << "<< Data Processing Settings >>" << std::endl;
+            std::cout << "    Resolution:  ";
+            switch (filtration.sampling) {
+                case 0:
+                std::cout << "high" << std::endl;
+                break;
+                case 1:
+                std::cout << "balanced" << std::endl;
+                break;
+                case 2:
+                std::cout << "low" << std::endl;
+            }
 
-        if (filtration.xGap) {
-            std::cout << "Horizontal gap filling enabled" << std::endl;
-        } else {
-            std::cout << "Horizontal gap filling disabled" << std::endl;
-        }
-        std::cout << "Gap filling window=" << filtration.xGapWindow << " mm" << std::endl;
+            std::cout << "    Horizontal gap filling:  ";
+            if (filtration.xGap) {
+                std::cout << "enabled, " << filtration.xGapWindow << " mm" << std::endl;
+            } else {
+                std::cout << "disabled" << std::endl;
+            }
 
-        if (filtration.yGap) {
-            std::cout << "Vertical gap filling enabled" << std::endl;
-        } else {
-            std::cout << "Vertical gap filling disabled" << std::endl;
-        }
-        std::cout << "Gap filling window=" << filtration.yGapWindow << " mm" << std::endl;
+            std::cout << "    Vertical gap filling:  ";
+            if (filtration.yGap) {
+                std::cout << "enabled, " << filtration.yGapWindow << " mm" << std::endl;
+            } else {
+                std::cout << "disabled" << std::endl;
+            }
 
-        if (filtration.xSmooth) {
-            std::cout << "Horizontal signal averaging enabled" << std::endl;
-        } else {
-            std::cout << "Horizontal signal averaging disabled" << std::endl;
-        }
-        std::cout << "Smoothing window=" << filtration.xSmoothWindow << " mm" << std::endl;
+            std::cout << "    Horizontal signal averaging:  ";
+            if (filtration.xSmooth) {
+                std::cout << "enabled, " << filtration.xSmoothWindow << " mm" << std::endl;
+            } else {
+                std::cout << "disabled" << std::endl;
+            }
 
-        if (filtration.ySmooth) {
-            std::cout << "Vertical signal averaging enabled" << std::endl;
-        } else {
-            std::cout << "Vertical signal averaging disabled" << std::endl;
-        }
-        std::cout << "Smoothing window=" << filtration.ySmoothWindow << " mm" << std::endl;
-
-        
+            std::cout << "    Vertical signal averaging:  ";
+            if (filtration.ySmooth) {
+                std::cout << "enabled, " << filtration.ySmoothWindow << " mm" << std::endl;
+            } else {
+                std::cout << "disabled" << std::endl;
+            }
+            std::cout << "\n\n" << std::endl;
+        }        
         // Output profile  
         std::cout << "Connected to Gocator, monitoring encoder..." << std::endl;  
         recordProfile(control, outputFilename);
