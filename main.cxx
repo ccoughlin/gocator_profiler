@@ -30,6 +30,15 @@ void recordProfile(GocatorControl& control, std::string& outputFilename) {
     thd.join();
 }
 
+// Turn the laser on to allow positioning before the profiling
+void target(GocatorControl& control) {
+    control.targetOn();
+    char character2;
+    std::cout << "Move the laser into position.  Press any key + Enter when complete." << std::endl;
+    std::cin >> character2;
+    control.targetOff();
+}
+
 // Usage: gocator_encoder [--output outputfile] [--config configfile]
 // If not specified, writes X,Y,Z data to file 'profile.csv' in current folder.
 int main(int argc, char* argv[]) {
@@ -39,6 +48,7 @@ int main(int argc, char* argv[]) {
     opt_desc.add_options()
         ("output,o", opts::value<std::string>()->default_value("profile.csv"), "output file for profile data")
         ("config,c", opts::value<std::string>()->default_value("gocator_encoder.cfg"), "configuration file")
+        ("target,t", "enable laser for targeting prior to profiling")
         ("help,h", "display basic help information")
         ("verbose,v", "display additional messages")
     ;
@@ -148,7 +158,15 @@ int main(int argc, char* argv[]) {
                 std::cout << "disabled" << std::endl;
             }
             std::cout << "\n\n" << std::endl;
-        }        
+        }
+
+        // Optionally turn the laser on without recording data - let the
+        // user line up the scanner
+        if (cmdline.count("target")) {
+            target(control);
+            return 0;
+        }
+
         // Output profile  
         std::cout << "Connected to Gocator, monitoring encoder..." << std::endl;  
         recordProfile(control, outputFilename);

@@ -36,6 +36,8 @@ class GocatorControl {
         GocatorControl(GocatorSystem& go2system, bool verboseFlag=false):sys(go2system), verbose(verboseFlag) {}
         void configureEncoder(Encoder& encoder);
         void configureFilter(GocatorFilter& filter);
+        void targetOn();
+        void targetOff();
         void recordProfile(std::string& outputFilename);
         Go2System& getSystem() {return sys.getSystem();}
         Encoder& getEncoder() {return lme;}

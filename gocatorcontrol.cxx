@@ -91,6 +91,23 @@ void GocatorControl::configureFilter(GocatorFilter& filter) {
         std::cout << setVSmoothResponse << std::endl;
     }
 }
+
+// Turns the laser on to allow positioning prior to beginning a scan
+void GocatorControl::targetOn() {
+    Go2System_SetTriggerSource(sys.getSystem(), GO2_TRIGGER_SOURCE_TIME);
+    std::string StartResponse = getResponseString("Go2System_Start",Go2System_Start(sys.getSystem()));
+    if (verbose) {
+        std::cout << StartResponse << std::endl;
+    }
+}
+
+// Turns the laser off
+void GocatorControl::targetOff() {
+    std::string StopResponse = getResponseString("Go2System_Stop", Go2System_Stop(sys.getSystem()));
+    if (verbose) {
+        std::cout << StopResponse << std::endl;
+    }
+}
     
 // Records range profiles to disk as comma-delimited ASCII.
 void GocatorControl::recordProfile(std::string& outputFilename) {
