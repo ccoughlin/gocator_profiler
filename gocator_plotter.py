@@ -15,6 +15,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx
 import numpy as np
+import scipy.signal
 import os.path
 
 widget_margin = 3 # Default margin around widgets
@@ -126,6 +127,7 @@ class UI(wx.Frame):
         self.file_mnu.AppendSubMenu(plottype_mnu, "Type Of Plot")
         self.plotrawdata = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Plot Raw Data",
                                            help="Plot raw vs. filtered data", kind=wx.ITEM_CHECK)
+        self.Bind(wx.EVT_MENU, self.on_filter_data, id=self.plotrawdata.GetId())
         self.file_mnu.AppendItem(self.plotrawdata)
         self.setzlim_mnui = wx.MenuItem(self.file_mnu, wx.ID_ANY, text="Set Z Axis Limits...\tCTRL+Z",
                                         help="Sets the limits of the Z Axis")
@@ -168,7 +170,8 @@ class UI(wx.Frame):
                     # Interpolate a surface from the point cloud to plot
                     surf = self.axes.plot_surface(X, Y, Z, rstride=3, cstride=3, cmap=cm.get_cmap('spectral'), 
                                               linewidth=1, antialiased=True)
-                    self.figure.colorbar(surf)
+                    colorbar = self.figure.colorbar(surf)
+                    colorbar.set_label("Z Position [mm]")
                 elif self.plot_wireframe_mnui.IsChecked():
                     # Interpolate a wireframe surface from the point cloud to plot
                     # Uses a higher resolution presentation than the surface - surface tends to bog down
@@ -179,6 +182,8 @@ class UI(wx.Frame):
             self.axes.set_xlabel('X Position [mm]')
             self.axes.set_ylabel('Y Position [mm]')
             self.axes.set_zlabel('Z Position [mm]')
+            self.axes.set_title(os.path.basename(self.data_fname))
+            
             self.refresh_plot()
         except IOError: # no data
             err_dlg = wx.MessageDialog(self, caption="Invalid Data File",
@@ -201,39 +206,58 @@ class UI(wx.Frame):
         """Reads the specified data file, optionally filtering the data before returning it as X,Y,Z."""
         x, y, z = np.genfromtxt(data_fname, delimiter=",", unpack=True)
         if not self.plotrawdata.IsChecked():
-            # First pass - laser scanner records invalid ranges as -32.768
-            xi = x[z!=-32.768]
-            yi = y[z!=-32.768]
-            zi = z[z!=-32.768]
+            xi = x[z>-20]
+            yi = y[z>-20]
+            zi = scipy.signal.wiener(z[z>-20], mysize=15, noise=1)
         else:
             xi = x
             yi = y
             zi = z
         return xi, yi, zi
+        
+    def get_zlim(self):
+        """Wrapper for matplotlib API changes in retrieving Z limits"""
+        try:
+            min_val, max_val = self.axes.get_zlim()
+        except AttributeError:
+            min_val, max_val = self.axes.get_zlim3d()
+        finally:
+            return min_val, max_val
+            
+    def set_zlim(self, limits_tuple):
+        """Wrapper for matplotlib API changes in setting Z limits"""
+        try:
+            self.axes.set_zlim(limits_tuple)
+        except AttributeError:
+            self.axes.set_zlim3d(limits_tuple)
 
     def on_setzlim(self, evt):
         """Handles request to reset the Z axis limits"""
         if hasattr(self, 'axes'):
             rng_dlg = FloatRangeDialog(dlg_title="Set Z Axis Limits")
-            try:
-                min_val, max_val = self.axes.get_zlim()
-            except AttributeError: # different matplotlib version, API change
-                min_val, max_val = self.axes.get_zlim3d()
+            min_val, max_val = self.get_zlim()
             rng_dlg.setValues(min_val, max_val)
             if rng_dlg.ShowModal() == wx.ID_OK:
                 min_val, max_val = rng_dlg.GetValue()
                 if min_val is not None and max_val is not None:
-                    try:
-                        self.axes.set_zlim((min_val, max_val))
-                    except AttributeError: #different matplotlib version
-                        self.axes.set_zlim3d((min_val, max_val))
+                    self.set_zlim((min_val, max_val))
                     self.refresh_plot()
             rng_dlg.Destroy()
 
     def on_plot_type(self, evt):
         """Handles change in choice of plot type"""
         if hasattr(self, 'data_fname'):
-            self.plot_data(self.data_fname)
+            if self.data_fname is not None:
+                axis_limits = self.get_zlim()
+                self.plot_data(self.data_fname)
+                self.set_zlim(axis_limits)
+                self.refresh_plot()
+                
+    def on_filter_data(self, evt):
+        """Handles change in choice of filtering data"""
+        if hasattr(self, 'data_fname'):
+            if self.data_fname is not None:
+                self.plot_data(self.data_fname)
 
     def refresh_plot(self):
         """Forces plot to redraw itself"""
