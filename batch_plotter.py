@@ -52,6 +52,7 @@ def generate_plotfname(datafname, extension='png'):
     folder = os.path.dirname(datafname)
     base, ext = os.path.splitext(basename)
     new_basename = '.'.join([base, extension])
+    print("Plot saved to {0}".format(os.path.join(folder, new_basename)))
     return os.path.join(folder, new_basename)
     
 if __name__ == "__main__":

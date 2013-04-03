@@ -1,5 +1,6 @@
 #include "gocatorcontrol.h"
 namespace filesystem = boost::filesystem;
+namespace posixtime = boost::posix_time;
 
 // Configures Gocator 20x0 to use an attached encoder.
 void GocatorControl::configureEncoder(Encoder& encoder) {
@@ -108,9 +109,20 @@ void GocatorControl::targetOff() {
         std::cout << StopResponse << std::endl;
     }
 }
+
+void GocatorControl::recordProfile(std::string& outputFilename) {
+    std::ostringstream tsStream;
+    const posixtime::ptime now = posixtime::second_clock::local_time();
+    posixtime::time_facet* const f = new posixtime::time_facet("%H:%M:%S %Y%b%d");
+    tsStream.imbue(std::locale(tsStream.getloc(), f));
+    tsStream << now;
+    std::string msgString = "Scan Initiated " + tsStream.str();
+    recordProfile(outputFilename, msgString);
+}
     
 // Records range profiles to disk as comma-delimited ASCII.
-void GocatorControl::recordProfile(std::string& outputFilename) {
+// The specified string is written into the header of the data file.
+void GocatorControl::recordProfile(std::string& outputFilename, std::string& commentString) {
     try {
         filesystem::remove(outputFilename.c_str());
     } catch (filesystem::filesystem_error &err) {
@@ -120,6 +132,7 @@ void GocatorControl::recordProfile(std::string& outputFilename) {
     fidout.open(outputFilename.c_str(), std::ios_base::app);
     if (fidout.is_open()) {
         fidout << "# File format: X Position [mm], Y Position [mm], Z Range [mm]" << std::endl;
+        fidout << "# " << commentString << std::endl;
         Go2ProfileData data = GO2_NULL;
         Go2Data dataItem;
         Go2Int64 encoderCounter;

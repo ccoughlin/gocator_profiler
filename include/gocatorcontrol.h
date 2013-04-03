@@ -13,6 +13,7 @@ extern "C" {
 #include <stdexcept>
 #include <boost/filesystem.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #define RECEIVE_TIMEOUT 100000
 #define INVALID_RANGE_16BIT 0x8000
@@ -39,6 +40,7 @@ class GocatorControl {
         void targetOn();
         void targetOff();
         void recordProfile(std::string& outputFilename);
+        void recordProfile(std::string& outputFilename, std::string& commentString);
         Go2System& getSystem() {return sys.getSystem();}
         Encoder& getEncoder() {return lme;}
         void resetEncoder() {Go2System_GetEncoder(sys.getSystem(), &startingEncoderReading);}
@@ -47,6 +49,7 @@ class GocatorControl {
         bool verbose;
         Encoder lme;
         Go2Int64 startingEncoderReading;
+
 };
 
 // Define the various types of trigger
