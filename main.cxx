@@ -20,15 +20,25 @@ extern "C" {
 namespace opts = boost::program_options;
 namespace filesystem = boost::filesystem;
 
+// Interrupts and joins specified thread on user input
+// TODO - replace user input with timeout as per PM's suggestion - ?
+void wait(boost::thread& threadToClose) {
+    char character;
+    std::cout << "Press any key + Enter to stop recording." << std::endl;
+    std::cin >> character;
+    threadToClose.interrupt();    
+    threadToClose.join();
+}
 // Thread wrapper to run profile recording
+void recordProfile(GocatorControl& control, std::string& outputFilename, std::string& commentString) {
+    boost::thread thd(boost::bind(&GocatorControl::recordProfile, control, outputFilename, commentString));
+    wait(thd);
+}
 void recordProfile(GocatorControl& control, std::string& outputFilename) {
     boost::thread thd(boost::bind(&GocatorControl::recordProfile, control, outputFilename));
-    char character2;
-    std::cout << "Press any key + Enter to stop recording." << std::endl;
-    std::cin >> character2;
-    thd.interrupt();    
-    thd.join();
+    wait(thd);
 }
+
 
 // Turn the laser on to allow positioning before the profiling
 void target(GocatorControl& control) {
@@ -49,6 +59,7 @@ int main(int argc, char* argv[]) {
         ("output,o", opts::value<std::string>()->default_value("profile.csv"), "output file for profile data")
         ("config,c", opts::value<std::string>()->default_value("gocator_encoder.cfg"), "configuration file")
         ("target,t", "enable laser for targeting prior to profiling")
+        ("message,m", "set comments for data output header")
         ("help,h", "display basic help information")
         ("verbose,v", "display additional messages")
     ;
@@ -169,7 +180,14 @@ int main(int argc, char* argv[]) {
 
         // Output profile  
         std::cout << "Connected to Gocator, monitoring encoder..." << std::endl;  
-        recordProfile(control, outputFilename);
+        // Optionally provide a comment to include in the data output's header
+        // (Default - current date and time)
+        if (cmdline.count("message")) {
+            std::string messageString = cmdline["message"].as<std::string>();            
+            recordProfile(control, outputFilename, messageString);
+        } else {
+            recordProfile(control, outputFilename);
+        }
     } catch (const boost::program_options::invalid_option_value& ex) {
         std::cerr << "Encountered a bad config option in '" << configFilename << ".'" << std::endl;
         throw(ex);

@@ -49,7 +49,6 @@ class GocatorControl {
         bool verbose;
         Encoder lme;
         Go2Int64 startingEncoderReading;
-
 };
 
 // Define the various types of trigger
