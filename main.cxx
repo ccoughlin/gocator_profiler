@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
         ("output,o", opts::value<std::string>()->default_value("profile.csv"), "output file for profile data")
         ("config,c", opts::value<std::string>()->default_value("gocator_encoder.cfg"), "configuration file")
         ("target,t", "enable laser for targeting prior to profiling")
-        ("message,m", "set comments for data output header")
+        ("message,m", opts::value<std::string>(), "set comments for data output header")
         ("help,h", "display basic help information")
         ("verbose,v", "display additional messages")
     ;
