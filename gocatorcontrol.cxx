@@ -153,6 +153,8 @@ void GocatorControl::recordProfile(std::string& outputFilename, std::string& com
             boost::this_thread::interruption_point();
             Go2Status returnCode = Go2System_ReceiveData(sys.getSystem(), RECEIVE_TIMEOUT, &data);
             if (returnCode == GO2_OK) {
+        		// Disable thread interruption
+		        boost::this_thread::disable_interruption di;
                 itemCount = Go2Data_ItemCount(data);
                 for (unsigned int j=0; j<itemCount; j++) {
                     dataItem = Go2Data_ItemAt(data, j);
@@ -162,8 +164,6 @@ void GocatorControl::recordProfile(std::string& outputFilename, std::string& com
                     double ZResolution = Go2ProfileData_ZResolution(dataItem);
                     double XOffset = Go2ProfileData_XOffset(dataItem);
                     double ZOffset = Go2ProfileData_ZOffset(dataItem);
-                    // Disable thread interruption while we're writing data
-                    boost::this_thread::disable_interruption di;
                     // number of ticks of encoder
                     std::string GetEncoderResponse = getResponseString("Go2System_GetEncoder", Go2System_GetEncoder(sys.getSystem(), &encoderCounter));
                     if (verbose) {
@@ -178,8 +178,12 @@ void GocatorControl::recordProfile(std::string& outputFilename, std::string& com
                             }
                         }
                     }
-                    boost::this_thread::restore_interruption ri(di);
+                    std::string freeDataResponse = getResponseString("Go2Data_Destroy", Go2Data_Destroy(data));
+                    if (verbose) {
+                        std::cout << freeDataResponse << std::endl;
+                    }
                 }
+		        boost::this_thread::restore_interruption ri(di);
             }
             boost::this_thread::yield();
         }
