@@ -130,25 +130,29 @@ void GocatorControl::recordProfile(std::string& outputFilename, std::string& com
     }
     std::ofstream fidout;
     fidout.open(outputFilename.c_str(), std::ios_base::app);
-    if (fidout.is_open()) {
-        fidout << "# File format: X Position [mm], Y Position [mm], Z Range [mm]" << std::endl;
-        fidout << "# " << commentString << std::endl;
-        Go2ProfileData data = GO2_NULL;
-        Go2Data dataItem;
-        Go2Int64 encoderCounter;
-        unsigned int itemCount = 0;
-        std::string StartResponse = getResponseString("Go2System_Start",Go2System_Start(sys.getSystem()));
-        if (verbose) {
-            std::cout << StartResponse << std::endl;
-        }
-        Go2Status returnCode = Go2System_ConnectData(sys.getSystem(), GO2_NULL, GO2_NULL);
-        if (verbose) {
-            std::cout << getResponseString("Go2System_ConnectData", returnCode) << std::endl;
-        }
-        if (returnCode != GO2_OK) {
-            std::cerr << "\n<< Initialization failed, aborting >>" << std::endl;
-            throw std::runtime_error("Gocator 20x0 initialization failed");
-        }
+    if (!fidout.is_open()) {
+        std::cerr << "<< Unable to open/write to output file '" << outputFilename << "', aborting >>" << std::endl;
+        throw std::runtime_error("Unable to write to output");
+    }
+    fidout << "# File format: X Position [mm], Y Position [mm], Z Range [mm]" << std::endl;
+    fidout << "# " << commentString << std::endl;
+    Go2ProfileData data = GO2_NULL;
+    Go2Data dataItem;
+    Go2Int64 encoderCounter;
+    unsigned int itemCount = 0;
+    std::string StartResponse = getResponseString("Go2System_Start",Go2System_Start(sys.getSystem()));
+    if (verbose) {
+        std::cout << StartResponse << std::endl;
+    }
+    Go2Status returnCode = Go2System_ConnectData(sys.getSystem(), GO2_NULL, GO2_NULL);
+    if (verbose) {
+        std::cout << getResponseString("Go2System_ConnectData", returnCode) << std::endl;
+    }
+    if (returnCode != GO2_OK) {
+        std::cerr << "\n<< Initialization failed, aborting >>" << std::endl;
+        throw std::runtime_error("Gocator 20x0 initialization failed");
+    }
+    try {
         while(true) {
             boost::this_thread::interruption_point();
             Go2Status returnCode = Go2System_ReceiveData(sys.getSystem(), RECEIVE_TIMEOUT, &data);
@@ -156,6 +160,8 @@ void GocatorControl::recordProfile(std::string& outputFilename, std::string& com
         		// Disable thread interruption
 		        boost::this_thread::disable_interruption di;
                 itemCount = Go2Data_ItemCount(data);
+                // number of ticks of encoder
+                encoderCounter = Go2Data_Encoder(data);
                 for (unsigned int j=0; j<itemCount; j++) {
                     dataItem = Go2Data_ItemAt(data, j);
                     short* profileData = Go2ProfileData_Ranges(dataItem);
@@ -164,11 +170,7 @@ void GocatorControl::recordProfile(std::string& outputFilename, std::string& com
                     double ZResolution = Go2ProfileData_ZResolution(dataItem);
                     double XOffset = Go2ProfileData_XOffset(dataItem);
                     double ZOffset = Go2ProfileData_ZOffset(dataItem);
-                    // number of ticks of encoder
-                    std::string GetEncoderResponse = getResponseString("Go2System_GetEncoder", Go2System_GetEncoder(sys.getSystem(), &encoderCounter));
-                    if (verbose) {
-                        std::cout << GetEncoderResponse << std::endl; 
-                    }
+                    
                     for(unsigned int arrayIndex=0;arrayIndex<profilePointCount; ++arrayIndex) {
                         if (profileData[arrayIndex] != INVALID_RANGE_16BIT) {
                             fidout << XOffset+XResolution*arrayIndex << "," << (encoderCounter-startingEncoderReading)*lme.resolution << "," << ZOffset+ZResolution*profileData[arrayIndex] << std::endl << std::flush;
@@ -185,15 +187,12 @@ void GocatorControl::recordProfile(std::string& outputFilename, std::string& com
                 }
 		        boost::this_thread::restore_interruption ri(di);
             }
-            boost::this_thread::yield();
         }
+    } catch (boost::thread_interrupted &err) {
         fidout.flush();
         fidout.close();
         if (fidout.fail()) {
             std::cerr << "<< Encountered error writing to '" << outputFilename << ",' data may have been lost.\n" << std::endl;
         }
-    } else {
-        std::cerr << "<< Unable to open/write to output file '" << outputFilename << "', aborting >>" << std::endl;
-        throw std::runtime_error("Unable to write to output");
-    }
+    } 
 }

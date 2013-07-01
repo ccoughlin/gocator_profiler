@@ -7,24 +7,24 @@ SOURCES=main.cxx go2response.cxx gocatorsystem.cxx gocatorcontrol.cxx gocatorcon
 OBJECTS=$(SOURCES:.cxx=.o)
 EXECUTABLE=gocator_encoder
 
-all: $(SOURCES) $(EXECUTABLE)
+all:	$(SOURCES) $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS)
+$(EXECUTABLE):	$(OBJECTS)
 	$(CC) $(OBJECTS) $(GOCATOR_SDK)/lib/libGo2.so $(LDFLAGS) -o $@
 
-main.o:
+main.o:	main.cxx
 	$(CC) $(CFLAGS) main.cxx
 
-go2response.o:
+go2response.o:	go2response.cxx
 	$(CC) $(CFLAGS) go2response.cxx
 
-gocatorsystem.o:
+gocatorsystem.o: gocatorsystem.cxx
 	$(CC) $(CFLAGS) gocatorsystem.cxx
 
-gocatorcontrol.o:
+gocatorcontrol.o:	gocatorcontrol.cxx
 	$(CC) $(CFLAGS) gocatorcontrol.cxx
 
-gocatorconfigurator.o:
+gocatorconfigurator.o:	gocatorconfigurator.cxx
 	$(CC) $(CFLAGS) gocatorconfigurator.cxx
 
 clean:
